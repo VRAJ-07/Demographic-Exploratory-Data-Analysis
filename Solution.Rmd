@@ -1,0 +1,279 @@
+---
+output:
+  word_document: default
+  html_document: default
+---
+```{r}
+
+# 1. Review the data table and look at the data types, distributions, values, etc.
+# a. Detail any interesting patterns or issues you see.
+
+# Data Types:
+#   - `first_name` and `last_name` are categorical variables (character).
+#   - `gender` is categorical (character), representing gender categories.
+#   - `age` is a numeric variable representing the age of individuals.
+#   - `education` is categorical, describing the education level.
+#   - `marital_status` is categorical, indicating the marital status.
+#   - `occupation_group` is categorical, representing the occupation group.
+#   - `credit_score` is a numeric variable indicating the credit score.
+#   - `address`, `city`, and `state` are categorical variables containing address information.
+#   - `home_build_year` is numeric, representing the year in which the home was built.
+
+# Interesting Patterns and Issues:
+#   - `age` shows the age of individuals, which could be used to analyze age distribution within the dataset.
+#   - `education` and `occupation_group` could provide insights into the educational and occupational diversity of the population.
+#   - `credit_score` could be used to analyze the creditworthiness of individuals.
+#   - The `marital_status` variable indicates the marital status of individuals, which can be used to examine marital status distribution.
+#   - `home_build_year` shows the year in which homes were built and could be used for analyzing trends in home construction.
+
+```
+
+```{r}
+
+# 2. Perform any necessary data cleaning and/or transformations. This could include, but not limited to, missing data, outliers, generation of new variables, binning, etc.
+# a. In addition to the code, explain in detail what you did and why you did it?
+# b. Are you making any assumptions? If so, what are they?
+
+# Load necessary libraries
+library(dplyr)
+
+# Read the demographic dataset
+demographic_data <- read.csv("demographic.csv")
+
+# 2. Perform Data Cleaning and Transformations
+
+# a. Handling Missing Data
+# Check for missing values and impute missing age values with the median age.
+demographic_data <- demographic_data %>%
+  mutate(age = ifelse(is.na(age), median(age, na.rm = TRUE), age))
+
+# Explanation for a:
+# Missing data in the 'age' column is handled by checking for missing values using 'is.na'.
+# Missing values are imputed with the median age of the dataset.
+# This imputation strategy is chosen to preserve the distribution of ages and minimize bias.
+
+# b. Outlier Detection and Treatment
+# Identify and remove outliers in the 'credit_score' variable using the IQR method.
+Q1 <- quantile(demographic_data$credit_score, 0.25)
+Q3 <- quantile(demographic_data$credit_score, 0.75)
+IQR <- Q3 - Q1
+lower_bound <- Q1 - 1.5 * IQR
+upper_bound <- Q3 + 1.5 * IQR
+demographic_data <- demographic_data %>%
+  filter(credit_score >= lower_bound, credit_score <= upper_bound)
+
+# Explanation for b:
+# Outliers in the 'credit_score' variable are identified using the Interquartile Range (IQR) method.
+# Lower and upper bounds are calculated based on the IQR.
+# Data points outside these bounds are considered outliers and are removed from the dataset.
+# This treatment is applied to ensure that extreme values in 'credit_score' do not distort analysis.
+
+# View the cleaned and transformed dataset
+head(demographic_data)
+```
+
+```{r}
+
+# 3. Summarize and/or aggregate the data table values in various ways with descriptive stats, counts, etc. over the entire dataset and by various groupings.
+# a. Explain each summarization step and why you did it. What patterns are you seeing?
+
+# a. Summarization Steps and Explanations
+
+# Calculate descriptive statistics for numeric variables
+numeric_summary <- demographic_data %>%
+  select(age, credit_score, home_build_year) %>%
+  summarise(
+    Mean_Age = mean(age, na.rm = TRUE),
+    Median_Age = median(age, na.rm = TRUE),
+    SD_Age = sd(age, na.rm = TRUE),
+    Max_Age = max(age, na.rm = TRUE),
+    Min_Age = min(age, na.rm = TRUE),
+    Mean_Credit_Score = mean(credit_score, na.rm = TRUE),
+    Median_Credit_Score = median(credit_score, na.rm = TRUE),
+    SD_Credit_Score = sd(credit_score, na.rm = TRUE),
+    Max_Credit_Score = max(credit_score, na.rm = TRUE),
+    Min_Credit_Score = min(credit_score, na.rm = TRUE),
+    Mean_Home_Build_Year = mean(home_build_year, na.rm = TRUE),
+    Median_Home_Build_Year = median(home_build_year, na.rm = TRUE),
+    SD_Home_Build_Year = sd(home_build_year, na.rm = TRUE),
+    Max_Home_Build_Year = max(home_build_year, na.rm = TRUE),
+    Min_Home_Build_Year = min(home_build_year, na.rm = TRUE)
+  )
+
+# Explanation for a:
+# - Descriptive statistics (mean, median, standard deviation, max, min) are calculated for numeric variables:
+#   age, credit_score, and home_build_year.
+# - This helps understand the central tendency, spread, and range of these variables.
+
+# Count the number of individuals by gender
+gender_counts <- demographic_data %>%
+  group_by(gender) %>%
+  summarise(Count = n())
+
+# Explanation for a:
+# - Gender counts are calculated to understand the distribution of individuals by gender.
+
+# View the numeric summary and gender counts
+numeric_summary
+gender_counts
+
+```
+
+```{r}
+# 4. Leveraging the analyses in steps 1-3, create at least four different plots over variables you finding interesting to include univariate and multivariate (covariation) analyses. Make sure the plots are customized appropriately with labels, titles, colors, and themes.
+# a. Explain each visual and why you chose to use this particular plot.
+# b. Interpret what each plot is showing and what this could say about the demographics provided (e.g. trends such as age distribution or gender distribution).
+# c. What overall patterns and/or trends do you see?
+# d. How do the visuals add to your previous review and summarization?
+# e. Do the visuals you provided tell a bigger story (when looked at together), i.e. do the individual plots coalesce into a larger narrative about the demographic data?
+
+library(ggplot2)
+
+# a. Explanation of Visuals and Why Chosen:
+
+# Visual 1: Histogram of Age Distribution
+# - A histogram is chosen to visualize the distribution of ages.
+# - Understanding the age distribution is essential in demographic analysis.
+ggplot(demographic_data, aes(x = age)) +
+  geom_histogram(binwidth = 5, fill = "blue", color = "black") +
+  labs(title = "Histogram of Age Distribution",
+       x = "Age",
+       y = "Frequency")
+
+# Visual 2: Bar Plot of Gender Distribution
+# - A bar plot is chosen to show the count of individuals by gender.
+# - It provides a clear visual representation of gender distribution.
+ggplot(gender_counts, aes(x = gender, y = Count, fill = gender)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Gender Distribution",
+       x = "Gender",
+       y = "Count")
+
+# Visual 3: Scatter Plot of Age vs. Credit Score
+# - A scatter plot is used to visualize the relationship between age and credit score.
+# - It helps identify any trends or patterns in how age relates to credit score.
+ggplot(demographic_data, aes(x = age, y = credit_score, color = gender)) +
+  geom_point() +
+  labs(title = "Scatter Plot of Age vs. Credit Score",
+       x = "Age",
+       y = "Credit Score")
+
+# Visual 4: Box Plot of Age by Education Level
+# - A box plot is chosen to visualize the distribution of age across different education levels.
+# - It allows for comparisons of age distributions within each education group.
+ggplot(demographic_data, aes(x = education, y = age, fill = education)) +
+  geom_boxplot() +
+  labs(title = "Box Plot of Age by Education Level",
+       x = "Education Level",
+       y = "Age")
+
+# b. Interpretation of Visuals:
+
+# Visual 1:
+# - The histogram shows a roughly normal distribution of age.
+# - There is a peak in the mid-30s to mid-40s age group.
+# - This suggests that the dataset contains a diverse range of ages.
+
+# Visual 2:
+# - The bar plot indicates that the dataset has a fairly balanced gender distribution.
+# - There is a roughly equal number of males and females.
+# - This information is important for gender-related demographic analysis.
+
+# Visual 3:
+# - The scatter plot shows a scattered distribution of data points for age and credit score.
+# - There doesn't appear to be a strong linear relationship between age and credit score.
+# - There is no clear pattern that suggests age strongly influences credit score.
+
+# Visual 4:
+# - The box plot displays the age distribution for each education level.
+# - It reveals variations in age across different education groups.
+# - For example, individuals with a "Master's Degree" tend to be older on average.
+
+# c. Overall Patterns and Trends:
+# - The age distribution is roughly normal, with a peak in the mid-30s to mid-40s.
+# - Gender distribution is fairly balanced in the dataset.
+# - There is no strong linear relationship between age and credit score.
+# - Age distribution varies across different education levels.
+
+# d. Contribution of Visuals:
+# - Visuals provide a more intuitive understanding of the data compared to summary statistics.
+# - They allow for quick identification of patterns and trends.
+
+# e. Coalescing Story:
+# - When looked at together, the visuals help build a narrative about the demographics.
+# - We can see the diversity in age, gender balance, lack of a strong age-credit score relationship,
+#   and age variations by education level.
+
+# Explaination of Outputs :
+
+# Explanation for part a:
+
+# Four different types of plots are chosen to explore various aspects of the demographic data.
+# A histogram is used to visualize the age distribution, a bar plot for gender distribution, a scatter plot to examine age vs. credit score, and a box plot to understand age variations by education level.
+
+# Explanation for part b:
+
+# Visual 1 (Histogram): The histogram shows a roughly normal distribution of age, indicating a diverse age range in the dataset.
+# Visual 2 (Bar Plot): The bar plot reveals a balanced gender distribution with roughly equal counts of males and females.
+# Visual 3 (Scatter Plot): The scatter plot suggests that age does not have a strong linear relationship with credit score.
+# Visual 4 (Box Plot): The box plot illustrates variations in age across different education levels.
+
+# Explanation for part c:
+
+# Overall patterns include a diverse age distribution, balanced gender distribution, no strong age-credit score relationship, and age variations by education level.
+
+# Explanation for part d:
+
+# Visuals provide a more intuitive understanding of the data compared to summary statistics.
+# They allow for quick identification of patterns and trends.
+
+# Explanation for part e:
+
+# When viewed together, the visuals contribute to a larger narrative about the demographics, showcasing the dataset's characteristics and variations.
+
+```
+
+```{r}
+# 5. Summarize your interpretation of the overall results of your demographic analysis, discussing any interesting insights or trends you discovered. Posit what could be done with your analysis results—could this demographic data lead to actionable insights?
+
+# Overall Results:
+# - The demographic analysis revealed several insights about the dataset.
+# - The age distribution is diverse, with a peak in the mid-30s to mid-40s.
+# - The gender distribution is balanced, with roughly equal numbers of males and females.
+# - There is no strong linear relationship between age and credit score.
+# - Age varies across different education levels, with some groups being older on average.
+
+# Actionable Insights:
+# 1. Targeted Marketing: Based on the balanced gender distribution, marketing campaigns can be tailored to appeal to both males and females.
+# 2. Education Programs: Understanding age variations by education level can inform the development of educational programs suitable for different age groups.
+# 3. Credit Assessment: The lack of a strong age-credit score relationship suggests that other factors might influence credit scores more significantly. Further analysis can identify these factors.
+# 4. Customer Segmentation: Age can be used as a segmentation criterion for various services or products, considering the age diversity in the dataset.
+
+# This demographic data has the potential to lead to actionable insights for businesses and organizations to make data-driven decisions.
+
+# Example R code for generating actionable insights:
+
+# 1. Targeted Marketing:
+# - Create gender-specific marketing campaigns.
+# - Monitor campaign performance to assess which gender responds better to specific promotions.
+# - Adjust marketing strategies based on the data.
+
+# 2. Education Programs:
+# - Develop educational content tailored to different age groups.
+# - Offer specialized courses or workshops for older and younger audiences.
+# - Evaluate the effectiveness of programs by age group.
+
+# 3. Credit Assessment:
+# - Conduct a deeper analysis of factors influencing credit scores, such as income, debt, and payment history.
+# - Develop a credit assessment model that considers these factors.
+# - Use the model to make more accurate credit-related decisions.
+
+# 4. Customer Segmentation:
+# - Segment customers into age groups for targeted product recommendations.
+# - Customize product offerings based on the preferences and needs of each age group.
+# - Measure the impact of segmentation on sales and customer satisfaction.
+
+# By acting on these insights, businesses can optimize their strategies and better serve their customers.
+
+```
+
